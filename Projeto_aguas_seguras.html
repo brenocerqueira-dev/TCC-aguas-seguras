@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ÁGUAS SEGURAS — Modelo 3D conceitual</title>
+<meta name="description" content="Modelo 3D interativo e conceitual do projeto ÁGUAS SEGURAS: Sistema de Monitoramento de Parâmetros da Água (TCC, Técnico em Automação Industrial, SENAI Dendezeiros).">
+<meta name="theme-color" content="#0b2447">
+<style>
+  :root {
+    --navy: #0b2447;
+    --navy-2: #12305f;
+    --blue: #1e6fd9;
+    --blue-soft: #e4eefb;
+    --gray: #8d99a8;
+    --gray-dark: #4a586b;
+    --line: #d7dee8;
+    --bg: #eef2f7;
+    --white: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--navy);
+    line-height: 1.5;
+        height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; 
+  }
+    header {
+    background: linear-gradient(90deg, var(--navy) 0%, var(--navy-2) 100%);
+    color: var(--white);
+    padding: 10px 24px;     display: flex;
+    align-items: center;
+    justify-content: space-between;     border-bottom: 2px solid var(--blue);
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(11, 36, 71, 0.15);   }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+    header h1 {
+    margin: 0;
+    font-size: 1.3rem; 
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    line-height: 1.2;
+  }
+
+  header p {
+    margin: 2px 0 0 0;
+    font-size: 0.85rem;
+    color: var(--blue-soft);     font-weight: 400;
+  }
+
+  header .course {
+    text-align: right;
+    font-size: 0.75rem;
+    color: var(--line);
+    line-height: 1.4;
+    border-left: 1px solid rgba(255, 255, 255, 0.15);     padding-left: 16px;
+  }
+  
+  
+  main {
+    max-width: 1560px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 20px 24px 12px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 390px;
+    gap: 20px;
+        align-items: stretch; 
+    flex: 1;
+    min-height: 0;   }
+
+  #viewer {
+    position: relative;
+    height: 100%;     border-radius: 14px;
+    overflow: hidden;
+    background: #dbe3ee;
+    box-shadow: 0 6px 24px rgba(11, 36, 71, .18);
+  z-index: 10;      }
+  #c { display: block; width: 100%; height: 100%; touch-action: none; outline: none; }
+  .toolbar {
+    position: absolute; top: 10px; left: 10px; right: 10px;
+    display: flex; flex-wrap: wrap; gap: 6px;
+    pointer-events: none;
+  }
+  .tb {
+    pointer-events: auto;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.1;
+    padding: 10px 12px;
+    min-height: 40px;
+    border-radius: 10px;
+    border: 1px solid rgba(30, 111, 217, .7);
+    background: rgba(11, 36, 71, .92);
+    color: var(--white);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tb[aria-pressed="true"] { background: var(--blue); border-color: #6aa5f0; }
+  .tb:hover { filter: brightness(1.12); }
+  .tb:focus-visible, .comp:focus-visible { outline: 3px solid #ffb703; outline-offset: 2px; }
+  .notice {
+    position: absolute; left: 10px; bottom: 10px;
+    font-size: 12px; color: var(--navy);
+    background: rgba(255, 255, 255, .82);
+    padding: 4px 9px; border-radius: 6px;
+    pointer-events: none;
+  }
+  .hint {
+    position: absolute; right: 10px; bottom: 10px;
+    font-size: 12px; color: var(--gray-dark);
+    background: rgba(255, 255, 255, .72);
+    padding: 4px 9px; border-radius: 6px;
+    pointer-events: none; text-align: right;
+  }
+  #loading, #error {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 6px; padding: 24px; text-align: center;
+    background: linear-gradient(#f6f8fb, #c9d3df);
+    color: var(--navy);
+  }
+  #error { background: #fff; }
+  #error strong { font-size: 1.1rem; }
+  #loading[hidden], #error[hidden] { display: none; }
+  .spinner {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 4px solid var(--blue-soft); border-top-color: var(--blue);
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 3s; } }
+
+    aside {
+    background: var(--white);
+    border-radius: 14px;
+    padding: 20px 20px 14px;
+    box-shadow: 0 6px 24px rgba(11, 36, 71, .10);
+        height: 100%;
+    overflow-y: auto;
+  }
+  aside::-webkit-scrollbar { width: 6px; }
+  aside::-webkit-scrollbar-track { background: transparent; }
+  aside::-webkit-scrollbar-thumb { background: var(--gray); border-radius: 10px; }
+  aside h2 { margin: 0 0 6px; font-size: 1.05rem; color: var(--navy); }
+  aside h2:not(:first-child) { margin-top: 18px; }
+  aside p { margin: 0; font-size: .93rem; color: var(--gray-dark); }
+  .goal { border-left: 4px solid var(--blue); padding-left: 12px; }
+  .comp-help { font-size: .82rem; color: var(--gray); margin-bottom: 6px; }
+  ul.comps { list-style: none; margin: 0; padding: 0; }
+  ul.comps li { border-top: 1px solid var(--line); }
+  .comp {
+    width: 100%; text-align: left;
+    background: none; border: 0; cursor: pointer;
+    padding: 10px 6px; font: inherit; color: var(--navy);
+    display: block; border-radius: 8px;
+  }
+  .comp:hover { background: var(--blue-soft); }
+  .comp.active { background: var(--blue-soft); box-shadow: inset 3px 0 0 var(--blue); }
+  .comp .name { font-weight: 650; font-size: .95rem; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .comp .desc { display: block; font-size: .83rem; color: var(--gray-dark); margin-top: 2px; }
+  .tag {
+    font-size: .7rem; font-weight: 600; padding: 1px 8px; border-radius: 999px;
+    border: 1px solid var(--gray); color: var(--gray-dark); background: #f4f6f9; white-space: nowrap;
+  }
+  .tag.doc { background: var(--navy); border-color: var(--navy); color: #fff; }
+  .tag.tbc { background: #fff; border-color: var(--gray); color: var(--gray-dark); }
+  .tag.con { background: #fff; border: 1px dashed var(--blue); color: var(--blue); }
+  .legend { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 4px; font-size: .78rem; color: var(--gray-dark); align-items: center; }
+  .foot-note { font-size: .8rem; color: var(--gray-dark); margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .foot-note p + p { margin-top: 6px; }
+
+  footer {
+    max-width: 1560px; 
+    width: 100%;
+    margin: 0 auto; 
+    padding: 12px 24px 16px;
+    font-size: .82rem; 
+    color: var(--gray-dark);
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 980px) {
+        body { 
+      height: auto; 
+      display: block; 
+      overflow: auto; 
+    }
+    
+        main { 
+      grid-template-columns: 1fr; 
+      padding: 12px 12px 8px; 
+      gap: 14px; 
+      align-items: start; 
+    }
+    
+        #viewer { 
+      height: 55vh;       min-height: 380px;
+    }
+    
+        aside { 
+      height: auto; 
+      overflow-y: visible; 
+      padding: 16px;
+    }
+    
+        header { 
+      padding: 12px 16px; 
+    }
+    header h1 { 
+      font-size: 1.1rem; 
+    }
+    header p { 
+      font-size: 0.75rem; 
+    }
+    header .course { 
+      display: none;     }
+    .hint { 
+      display: none;     }
+    
+    footer { 
+      padding: 16px; 
+      text-align: center;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <!-- Ícone reduzido de 40x40 para 32x32 -->
+    <svg width="32" height="32" viewBox="0 0 40 40" aria-hidden="true">
+      <path d="M20 3 C20 3 7 17 7 25 a13 13 0 0 0 26 0 C33 17 20 3 20 3 Z" fill="#1e6fd9"/>
+      <path d="M13 26 a7 7 0 0 0 7 7" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" opacity=".85"/>
+    </svg>
+    <div>
+      <h1>ÁGUAS SEGURAS</h1>
+      <p>Sistema de Monitoramento de Parâmetros da Água</p>
+    </div>
+  </div>
+  <div class="course">
+    TCC, Técnico em Automação Industrial<br>
+    SENAI Dendezeiros
+  </div>
+</header>
+
+<main>
+  <section id="viewer" aria-label="Visualizador 3D interativo do equipamento">
+    <canvas id="c" tabindex="0" aria-label="Modelo 3D do equipamento ÁGUAS SEGURAS. Arraste para girar."></canvas>
+
+    <div class="toolbar" role="toolbar" aria-label="Controles do modelo 3D">
+      <button class="tb" id="b-cover" type="button" aria-pressed="true">Cobertura: visível</button>
+      <button class="tb" id="b-lid" type="button" aria-pressed="false">Tampa: removida</button>
+      <button class="tb" id="b-exp" type="button" aria-pressed="false">Vista explodida</button>
+      <button class="tb" id="b-lab" type="button" aria-pressed="true">Rótulos: visíveis</button>
+      <button class="tb" id="b-rot" type="button" aria-pressed="false">Girar sozinho</button>
+      <button class="tb" id="b-top" type="button">Vista superior</button>
+      <button class="tb" id="b-front" type="button">Vista frontal</button>
+      <button class="tb" id="b-home" type="button">Reiniciar vista</button>
+    </div>
+
+    <div class="notice">Modelo 3D conceitual — escala ilustrativa</div>
+    <div class="hint">Arraste para girar. Role ou pince para aproximar. Botão direito ou dois dedos para mover.</div>
+
+    <div id="loading" role="status"><div class="spinner"></div><span>Carregando o modelo 3D…</span></div>
+    <div id="error" hidden role="alert">
+      <strong>Não foi possível carregar o modelo 3D.</strong>
+      <span>Verifique a conexão com a internet (a biblioteca Three.js é carregada online) e atualize a página.
+      Se o problema continuar, use um navegador atualizado com WebGL ativado.</span>
+      <span id="error-detail" style="font-size:.8rem;color:#4a586b"></span>
+    </div>
+  </section>
+
+  <aside>
+    <h2>Objetivo do projeto</h2>
+    <p class="goal">Desenvolver uma solução tecnológica automatizada, acessível e economicamente viável para auxiliar no monitoramento da poluição marinha, por meio da aquisição de parâmetros da qualidade da água (pH e turbidez) e da disponibilização das informações em uma plataforma digital.</p>
+
+    <h2>Componentes do modelo</h2>
+    <p class="comp-help">Toque ou clique em um item para a câmera se aproximar dele.</p>
+    <div class="legend">
+      <span class="tag doc">Documentado</span>
+      <span class="tag tbc">A confirmar</span>
+      <span class="tag con">Conceitual</span>
+    </div>
+
+    <!-- Para editar: cada item usa data-focus, que deve existir no objeto FOCUS do script. -->
+    <ul class="comps">
+      <li><button class="comp" type="button" data-focus="caixa"><span class="name">Caixa organizadora 29 L <span class="tag doc">Documentado</span></span><span class="desc">Base e proteção do conjunto. Dimensões ilustrativas.</span></button></li>
+      <li><button class="comp" type="button" data-focus="recipiente"><span class="name">Recipiente de teste 1,5 L <span class="tag doc">Documentado</span></span><span class="desc">Recipiente transparente com água, onde os sensores ficam imersos.</span></button></li>
+      <li><button class="comp" type="button" data-focus="ph"><span class="name">Sensor de pH com eletrodo <span class="tag tbc">A confirmar</span></span><span class="desc">PH-4502C conforme a documentação; modelo exato a confirmar.</span></button></li>
+      <li><button class="comp" type="button" data-focus="turbidez"><span class="name">Sensor de turbidez <span class="tag tbc">A confirmar</span></span><span class="desc">ST100 conforme a documentação; modelo exato a confirmar.</span></button></li>
+      <li><button class="comp" type="button" data-focus="modulos"><span class="name">Módulos de leitura <span class="tag tbc">A confirmar</span></span><span class="desc">Módulos eletrônicos dos sensores de pH e de turbidez.</span></button></li>
+      <li><button class="comp" type="button" data-focus="esp32"><span class="name">ESP32 DevKit <span class="tag doc">Documentado</span></span><span class="desc">Microcontrolador. Pinos utilizados e ligações não definidos.</span></button></li>
+      <li><button class="comp" type="button" data-focus="protoboard"><span class="name">Protoboard MB-102 <span class="tag doc">Documentado</span></span><span class="desc">830 pontos. Ligações elétricas não modeladas.</span></button></li>
+      <li><button class="comp" type="button" data-focus="resistores"><span class="name">Resistores 5K1 (2) <span class="tag doc">Documentado</span></span><span class="desc">Previstos para o divisor de tensão do pH; ligação não definida.</span></button></li>
+      <li><button class="comp" type="button" data-focus="fonte"><span class="name">Fonte 5 V / 2 A micro USB <span class="tag con">Conceitual</span></span><span class="desc">Item documentado; o desenho da fonte é genérico.</span></button></li>
+      <li><button class="comp" type="button" data-focus="suportes"><span class="name">Suportes dos sensores <span class="tag con">Conceitual</span></span><span class="desc">Colunas, barra e braços que mantêm os sensores posicionados.</span></button></li>
+      <li><button class="comp" type="button" data-focus="cobertura"><span class="name">Cobertura da eletrônica <span class="tag con">Conceitual</span></span><span class="desc">Proteção sobre o deck elevado, acima da linha d’água.</span></button></li>
+      <li><button class="comp" type="button" data-focus="cabos"><span class="name">Cabos e jumpers <span class="tag con">Conceitual</span></span><span class="desc">Percurso ilustrativo; as ligações elétricas não estão definidas.</span></button></li>
+      <li><button class="comp" type="button" data-focus="tampa"><span class="name">Tampa da caixa <span class="tag con">Conceitual</span></span><span class="desc">Removível. Posição e aberturas ilustrativas.</span></button></li>
+    </ul>
+
+    <div class="foot-note">
+      <p>Dimensões, alturas e posições são ilustrativas e não representam medidas oficiais. Rótulos com borda tracejada indicam elementos conceituais, sem especificação definida.</p>
+      <p>O equipamento representado não certifica a potabilidade da água.</p>
+    </div>
+  </aside>
+</main>
+
+<footer>
+  ÁGUAS SEGURAS — SENAI Dendezeiros, curso Técnico em Automação Industrial. Modelo 3D conceitual.
+  <!-- Para incluir os nomes da equipe e do docente, adicione aqui um parágrafo. -->
+</footer>
+
+<!-- Aviso caso a biblioteca Three.js não carregue (por exemplo, sem internet). -->
+<script>
+  (function () {
+    function showError(detail) {
+      if (window.__aguasOk) return;
+      var l = document.getElementById('loading'); if (l) l.hidden = true;
+      var e = document.getElementById('error'); if (e) e.hidden = false;
+      var d = document.getElementById('error-detail'); if (d && detail) d.textContent = detail;
+    }
+    window.__aguasShowError = showError;
+    setTimeout(function () { showError(''); }, 12000);
+  })();
+</script>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.181.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.181.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+try {
+
+const $ = id => document.getElementById(id);
+const canvas = $('c');
+const viewer = $('viewer');
+
+// =====================================================================
+//  BASE
+// =====================================================================
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(32, 1, 1, 800);
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+
+const bgc = document.createElement('canvas'); bgc.width = 4; bgc.height = 512;
+const bg = bgc.getContext('2d'); const gr = bg.createLinearGradient(0, 0, 0, 512);
+gr.addColorStop(0, '#f6f8fb'); gr.addColorStop(1, '#c9d3df'); bg.fillStyle = gr; bg.fillRect(0, 0, 4, 512);
+const bgTex = new THREE.CanvasTexture(bgc); bgTex.colorSpace = THREE.SRGBColorSpace; scene.background = bgTex;
+
+const envScene = new THREE.Scene();
+envScene.add(new THREE.Mesh(new THREE.SphereGeometry(60, 32, 16), new THREE.MeshBasicMaterial({ color: 0x8fa3bd, side: THREE.BackSide })));
+const panel = (w, h, x, y, z, v) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ side: THREE.DoubleSide })); m.material.color.setScalar(v); m.position.set(x, y, z); m.lookAt(0, 0, 0); envScene.add(m); };
+panel(40, 25, 0, 50, 10, 6); panel(25, 30, -45, 20, 20, 3.5); panel(25, 30, 45, 15, -20, 3); panel(40, 15, 0, 10, 55, 2);
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(envScene, 0.04).texture;
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0xaebbd0, 0.55));
+const key = new THREE.DirectionalLight(0xffffff, 1.5); key.position.set(40, 80, 50); key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048); Object.assign(key.shadow.camera, { left: -65, right: 65, top: 65, bottom: -65, near: 10, far: 240 });
+key.shadow.bias = -0.0004; key.shadow.radius = 4; scene.add(key);
+const fill = new THREE.DirectionalLight(0xa9c8ff, 0.5); fill.position.set(-60, 35, 20); scene.add(fill);
+const rim = new THREE.DirectionalLight(0xffffff, 0.6); rim.position.set(-20, 40, -70); scene.add(rim);
+
+// =====================================================================
+//  FUNÇÕES AUXILIARES (iguais às da cena original)
+// =====================================================================
+const std = (c, r = 0.5, m = 0, o = {}) => new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: r, metalness: m }, o));
+const acr = (c, op, o = {}) => new THREE.MeshPhysicalMaterial(Object.assign({ color: c, transparent: true, opacity: op, roughness: 0.05, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.05, envMapIntensity: 1.3, side: THREE.DoubleSide, depthWrite: false }, o));
+const mk = (geo, mat, x, y, z, p) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); if (p) p.add(m); return m; };
+const bx = (w, h, d, mat, x, y, z, p) => mk(new THREE.BoxGeometry(w, h, d), mat, x, y, z, p);
+const cy = (r, h, mat, x, y, z, p, ax, seg) => { const m = mk(new THREE.CylinderGeometry(r, r, h, seg || 24), mat, x, y, z, p); if (ax === 'x') m.rotation.z = Math.PI / 2; if (ax === 'z') m.rotation.x = Math.PI / 2; return m; };
+const tube = (pts, col, r, p, rough) => {
+  const c = new THREE.CatmullRomCurve3(pts.map(a => new THREE.Vector3(a[0], a[1], a[2])), false, 'catmullrom', 0.4);
+  return mk(new THREE.TubeGeometry(c, Math.max(48, pts.length * 16), r, 10, false), std(col, rough || 0.55, 0), 0, 0, 0, p);
+};
+const edges = (w, h, d, x, y, z, p, col, op) => { const l = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(w, h, d)), new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: op })); l.position.set(x, y, z); p.add(l); return l; };
+let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const smd = (p, w, d, y, n) => { for (let i = 0; i < n; i++) bx(0.2, 0.07, 0.12, std(i % 2 ? 0x3b3b3b : 0xb8b1a0, 0.6), (rnd() - 0.5) * (w - 0.6), y, (rnd() - 0.5) * (d - 0.6), p); };
+
+const NAVY = 0x0b2447, TECH = 0x1e6fd9;
+const navy = std(NAVY, 0.45, 0.1), blk = std(0x15171c, 0.5), dark = std(0x2a2f38, 0.6);
+const silver = std(0xc8ccd2, 0.25, 1), gold = std(0xd4af37, 0.3, 1), blueP = std(TECH, 0.4);
+const pcbG = std(0x0f6b3a, 0.5), pcbK = std(0x14161b, 0.45);
+const E = 12; // altura do deck da eletrônica
+
+const G = n => { const g = new THREE.Group(); g.name = n; scene.add(g); return g; };
+const gTank = G('tank'), gCover = G('cover'), gElec = G('elec'), gCont = G('cont'), gSens = G('sens'), gPower = G('power'), gCables = G('cables'), gLid = G('lid');
+gElec.position.y = E;
+
+bx(84, 0.5, 54, std(0xdfe5ed, 0.85), 0, -0.25, 0, scene);
+bx(84.2, 0.2, 0.3, std(TECH, 0.5), 0, 0.02, 27.1, scene);
+
+// ===== CAIXA ORGANIZADORA 29 L (base/proteção) — dimensões ilustrativas =====
+const tAcr = acr(0xd6ecff, 0.13);
+bx(46, 0.5, 30, acr(0xcfe6fb, 0.35), 0, 0.25, 0, gTank);
+bx(0.5, 24, 30, tAcr, -22.75, 12, 0, gTank); bx(0.5, 24, 30, tAcr, 22.75, 12, 0, gTank);
+bx(46, 24, 0.5, tAcr, 0, 12, -14.75, gTank); bx(46, 24, 0.5, tAcr, 0, 12, 14.75, gTank);
+edges(46, 24, 30, 0, 12, 0, gTank, 0x5f86c4, 0.6);
+const rimM = std(0xe9eef5, 0.35);
+bx(46.4, 0.6, 1.2, rimM, 0, 24.3, -14.6, gTank); bx(46.4, 0.6, 1.2, rimM, 0, 24.3, 14.6, gTank);
+bx(1.2, 0.6, 30.4, rimM, -22.6, 24.3, 0, gTank); bx(1.2, 0.6, 30.4, rimM, 22.6, 24.3, 0, gTank);
+// divisória (conceitual) entre zona úmida e eletrônica — até a altura do deck
+bx(0.4, 12, 29, acr(0xffffff, 0.4), 1.0, 6.5, 0, gTank);
+bx(0.5, 0.3, 29, navy, 1.0, 12.65, 0, gTank);
+// passa-fio na parede direita (cabo da fonte)
+cy(0.5, 0.7, navy, 22.9, 15.6, 6.4, gTank, 'x');
+// apoio conceitual do recipiente de teste
+[-19.45, -4.55].forEach(x => [-2.8, 2.8].forEach(z => bx(0.8, 1.6, 2.4, navy, x, 1.3, z, gTank)));
+// deck elevado da eletrônica (conceitual): 4 colunas, acima da linha d'água
+const post = std(0xe9eef5, 0.35);
+[4, 21].forEach(x => [-12, 12].forEach(z => { bx(1, 12, 1, post, x, 6.5, z, gTank); bx(2.4, 0.3, 2.4, navy, x, 0.65, z, gTank); }));
+
+// ===== TAMPA (removível; posição e aberturas conceituais) =====
+const lidM = acr(0xd6ecff, 0.28);
+bx(3.2, 0.4, 30.4, lidM, -21.6, 24.8, 0, gLid);
+bx(25.2, 0.4, 30.4, lidM, 10.6, 24.8, 0, gLid);
+bx(18, 0.4, 5.2, lidM, -11, 24.8, 12.6, gLid); bx(18, 0.4, 5.2, lidM, -11, 24.8, -12.6, gLid);
+bx(6, 0.5, 1.2, navy, 18, 25.15, 0, gLid);
+edges(46.4, 0.4, 30.4, 0, 24.8, 0, gLid, 0x5f86c4, 0.6);
+gLid.visible = false;
+
+// ===== ZONA ÚMIDA =====
+const cAcr = acr(0xdff0ff, 0.2);
+bx(14, 0.3, 10, acr(0xdff0ff, 0.35), -12, 0.65, 0, gCont);
+bx(14, 11, 0.3, cAcr, -12, 6, -4.85, gCont); bx(14, 11, 0.3, cAcr, -12, 6, 4.85, gCont);
+bx(0.3, 11, 10, cAcr, -18.85, 6, 0, gCont); bx(0.3, 11, 10, cAcr, -5.15, 6, 0, gCont);
+edges(14, 11, 10, -12, 6, 0, gCont, 0x5f86c4, 0.7);
+const water = mk(new THREE.BoxGeometry(13.5, 7, 9.5), acr(0x2f93e6, 0.5, { roughness: 0.02, ior: 1.33, envMapIntensity: 1.6 }), -12, 4.3, 0, gCont);
+water.renderOrder = 1;
+const wsurf = bx(13.5, 0.03, 9.5, acr(0x9fd4ff, 0.45, { roughness: 0.0 }), -12, 7.8, 0, gCont); wsurf.renderOrder = 2;
+edges(13.5, 7, 9.5, -12, 4.3, 0, gCont, 0x9fd4ff, 0.5);
+
+// ===== SENSORES + SUPORTES =====
+const glass = acr(0xe8f4ff, 0.3, { roughness: 0.03 });
+const el = new THREE.Group(); el.position.set(-15, 0, 0); gSens.add(el);
+cy(0.6, 5.2, glass, 0, 6.2, 0, el);
+cy(0.18, 4.9, dark, 0, 6.3, 0, el);
+mk(new THREE.SphereGeometry(0.6, 24, 16), glass, 0, 3.6, 0, el);
+cy(0.72, 0.9, std(0xb8bdc6, 0.3, 1), 0, 9.2, 0, el, null, 32);
+cy(0.62, 9.6, std(0x16181d, 0.4), 0, 14.0, 0, el);
+cy(0.35, 1.0, blk, 0, 19.5, 0, el);
+const tb = new THREE.Group(); tb.position.set(-9, 0, 0); gSens.add(tb);
+[-0.85, 0.85].forEach(x => { cy(0.55, 4.8, glass, x, 6.9, 0, tb); cy(0.22, 4.0, dark, x, 6.6, 0, tb); });
+cy(1.5, 3.0, acr(0xf4f8ff, 0.55, { roughness: 0.15 }), 0, 10.8, 0, tb);
+cy(1.2, 0.18, pcbG, 0, 10.4, 0, tb);
+cy(1.62, 1.2, blueP, 0, 12.7, 0, tb);
+[-1, 1].forEach(s => bx(0.5, 1.4, 0.9, blueP, s * 1.85, 12.4, 0, tb));
+cy(0.3, 0.5, blueP, 0, 13.45, 0, tb);
+cy(0.28, 0.5, blueP, 0, 12.8, 1.7, tb, 'z');   // saída lateral do cabo (passa-cabo da sonda)
+const spost = std(0xe9eef5, 0.35);
+[-21.5, -0.5].forEach(x => { bx(1, 16, 1, spost, x, 8.5, -6, gSens); bx(2.6, 0.3, 2.6, navy, x, 0.65, -6, gSens); });
+bx(22.4, 1, 1.2, spost, -11, 16, -6, gSens);
+bx(22.4, 0.15, 1.25, navy, -11, 15.45, -6, gSens);
+bx(0.6, 0.6, 6, navy, -15, 16, -3, gSens);
+mk(new THREE.TorusGeometry(0.85, 0.22, 12, 32), navy, -15, 16, 0, gSens).rotation.x = Math.PI / 2;
+bx(0.6, 3.8, 0.6, navy, -9, 14.1, -6, gSens);
+bx(0.6, 0.6, 6, navy, -9, 12.2, -3, gSens);
+mk(new THREE.TorusGeometry(1.9, 0.25, 12, 40), navy, -9, 12.2, 0, gSens).rotation.x = Math.PI / 2;
+mk(new THREE.TorusGeometry(0.32, 0.08, 10, 20), navy, -15, 20.6, -0.25, gSens).rotation.x = Math.PI / 2; // presilha do cabo do eletrodo
+
+// ===== ZONA ELETRÔNICA (deck elevado; coordenadas locais, grupo em y = 12) =====
+bx(19, 0.6, 26, navy, 12.5, 0.8, 0, gElec);
+const sMat = std(0xc8ccd2, 0.3, 1);
+
+const ph = new THREE.Group(); ph.position.set(9, 1.6, -8); gElec.add(ph);
+[[-1.9, -1.4], [1.9, -1.4], [-1.9, 1.4], [1.9, 1.4]].forEach(a => cy(0.18, 0.5, sMat, a[0], -0.25, a[1], ph));
+bx(4.2, 0.15, 3.2, pcbG, 0, 0.075, 0, ph);
+cy(0.55, 1.3, silver, -2.15, 0.7, 0, ph, 'x', 32); cy(0.3, 0.2, dark, -2.85, 0.7, 0, ph, 'x'); cy(0.08, 0.5, gold, -2.7, 0.7, 0, ph, 'x');
+bx(0.8, 0.45, 0.8, blueP, 0.9, 0.375, 0.7, ph); cy(0.15, 0.06, silver, 0.9, 0.64, 0.7, ph);
+bx(0.8, 0.45, 0.8, blueP, 1.9, 0.375, -0.8, ph); cy(0.15, 0.06, silver, 1.9, 0.64, -0.8, ph);
+bx(1.0, 0.22, 0.45, blk, -0.2, 0.26, -0.5, ph); bx(0.9, 0.2, 0.4, blk, -0.1, 0.25, 0.6, ph);
+smd(ph, 4.2, 3.2, 0.18, 14);
+bx(1.6, 0.25, 0.28, blk, 0.6, 0.275, 1.35, ph);
+for (let k = 0; k < 6; k++) cy(0.03, 0.9, gold, 0.6 + (k - 2.5) * 0.254, 0.6, 1.35, ph, null, 8);
+
+const tm = new THREE.Group(); tm.position.set(17, 1.6, -8); gElec.add(tm);
+[[-1.3, -1.0], [1.3, -1.0], [-1.3, 1.0], [1.3, 1.0]].forEach(a => cy(0.18, 0.5, sMat, a[0], -0.25, a[1], tm));
+bx(3.0, 0.15, 2.6, pcbK, 0, 0.075, 0, tm);
+bx(0.8, 0.45, 0.8, blueP, 0.8, 0.375, -0.6, tm); cy(0.15, 0.06, silver, 0.8, 0.64, -0.6, tm);
+bx(1.0, 0.2, 0.5, blk, 0.0, 0.25, 0.0, tm);
+bx(0.3, 0.1, 0.2, std(0xdd2222, 0.3, 0, { emissive: 0xaa0000 }), 0.5, 0.2, 0.7, tm);
+smd(tm, 3.0, 2.6, 0.18, 10);
+bx(1.1, 0.25, 0.28, blk, 0, 0.275, 1.05, tm);
+for (let k = 0; k < 4; k++) cy(0.03, 0.9, gold, (k - 1.5) * 0.254, 0.6, 1.05, tm, null, 8);
+bx(0.8, 0.6, 0.9, std(0xeeeeee, 0.5), -1.65, 0.45, 0, tm);
+
+const pb = new THREE.Group(); pb.position.set(12.5, 1.1, 4); gElec.add(pb);
+bx(16.5, 0.9, 5.5, std(0xeef0f2, 0.45), 0, 0.45, 0, pb);
+bx(16.0, 0.04, 0.45, std(0xc9cdd2, 0.6), 0, 0.91, 0, pb);
+bx(15.4, 0.012, 0.05, std(0xd32f2f, 0.5), 0, 0.91, 2.55, pb); bx(15.4, 0.012, 0.05, std(0x1e6fd9, 0.5), 0, 0.91, -2.55, pb);
+const hp = [];
+for (let i = 0; i < 63; i++) { const x = -7.9 + i * 0.254; for (let k = 0; k < 5; k++) { const z = 0.381 + k * 0.254; hp.push([x, z], [x, -z]); } }
+for (let j = 0; j < 50; j++) { const x = -7.3 + j * 0.254 + Math.floor(j / 5) * 0.254; [2.05, 2.304, -2.05, -2.304].forEach(z => hp.push([x, z])); }
+const holes = new THREE.InstancedMesh(new THREE.BoxGeometry(0.1, 0.03, 0.1), std(0x22262c, 0.8), hp.length);
+const mt = new THREE.Matrix4(); hp.forEach((a, i) => { mt.makeTranslation(a[0], 0.915, a[1]); holes.setMatrixAt(i, mt); }); pb.add(holes);
+
+const es = new THREE.Group(); es.position.set(8, 2.75, 4); gElec.add(es);
+bx(5.2, 0.16, 2.83, pcbK, 0, 0.08, 0, es);
+for (let k = 0; k < 15; k++) [-1.143, 1.143].forEach(z => cy(0.035, 1.1, gold, -1.78 + k * 0.254, -0.25, z, es, null, 8));
+bx(3.8, 0.25, 0.25, blk, 0, -0.13, -1.143, es); bx(3.8, 0.25, 0.25, blk, 0, -0.13, 1.143, es);
+bx(1.9, 0.28, 1.8, std(0xcfd3d9, 0.3, 1), -1.2, 0.3, 0, es);
+bx(0.75, 0.04, 1.8, std(0x0e1a12, 0.5), -2.3, 0.18, 0, es);
+for (let i = 0; i < 5; i++) bx(0.55, 0.01, 0.05, gold, -2.3, 0.21, -0.6 + i * 0.3, es);
+bx(0.5, 0.15, 0.5, blk, 1.6, 0.23, -0.3, es);
+bx(0.7, 0.32, 0.6, sMat, 2.4, 0.3, 0, es);
+[-0.9, 0.9].forEach(z => { bx(0.55, 0.28, 0.4, silver, 1.9, 0.3, z, es); bx(0.3, 0.12, 0.25, blk, 1.9, 0.5, z, es); });
+bx(0.4, 0.2, 0.25, std(0xc98a1a, 0.4), 0.2, 0.26, -1.0, es);
+bx(0.5, 0.15, 0.4, blk, 0.4, 0.23, 0.9, es);
+bx(0.15, 0.08, 0.12, std(0xff3b30, 0.3, 0, { emissive: 0x880000 }), 0.8, 0.2, 0.2, es);
+smd(es, 5.2, 2.83, 0.18, 8);
+
+// resistores 5K1 (2×) — perto do lado do pH; sem ligações modeladas
+const resis = (x) => {
+  const r = new THREE.Group(); r.position.set(x, 0.9, 0); pb.add(r);
+  cy(0.17, 0.63, std(0xd8c8a0, 0.6), 0, 0.45, 0, r, 'z', 16);
+  [[-0.2, 0x2e8b3d], [-0.07, 0x6b3a1e], [0.06, 0xc0392b], [0.24, 0xd4af37]].forEach(b => cy(0.18, 0.05, std(b[1], 0.5), 0, 0.45, b[0] * 0.8, r, 'z', 16));
+  [-0.889, 0.889].forEach(z => { cy(0.02, 0.45, silver, 0, 0.225, z, r, null, 8); const len = Math.abs(z) - 0.31; cy(0.02, len, silver, 0, 0.45, Math.sign(z) * (0.31 + len / 2), r, 'z', 8); });
+};
+resis(1.2); resis(1.7);
+
+// ===== COBERTURA (conceitual) — sobre o deck =====
+const cAc = acr(0x2b4a7a, 0.22, { roughness: 0.08 });
+const cx0 = 3.0, cx1 = 22.0, cw = cx1 - cx0, ccx = (cx0 + cx1) / 2, cz = 26, cb = 13.1, ch = 9, cmid = cb + ch / 2;
+bx(0.25, 4.3, cz, cAc, cx0, cb + 2.15, 0, gCover);             // parede esquerda inferior
+bx(0.25, 2.5, cz, cAc, cx0, cb + ch - 1.25, 0, gCover);        // parede esquerda superior (fenda y 17,4–19,6)
+bx(0.25, ch, cz, cAc, cx1, cmid, 0, gCover);
+bx(cw, ch, 0.25, cAc, ccx, cmid, -cz / 2, gCover); bx(cw, ch, 0.25, cAc, ccx, cmid, cz / 2, gCover);
+bx(cw, 0.25, cz, cAc, ccx, cb + ch, 0, gCover);
+for (let i = 0; i < 7; i++) bx(0.35, 0.05, 15, std(NAVY, 0.5), ccx - 6 + i * 2, cb + ch + 0.15, 0, gCover);
+edges(cw, ch, cz, ccx, cmid, 0, gCover, 0x8fb2ee, 0.9);
+const fr = std(NAVY, 0.4, 0.1);
+bx(cw + 0.4, 0.3, 0.5, fr, ccx, cb + ch + 0.1, -cz / 2, gCover); bx(cw + 0.4, 0.3, 0.5, fr, ccx, cb + ch + 0.1, cz / 2, gCover);
+bx(0.5, 0.3, cz, fr, cx0, cb + ch + 0.1, 0, gCover); bx(0.5, 0.3, cz, fr, cx1, cb + ch + 0.1, 0, gCover);
+// passa-cabos (conceituais)
+const ring = (r, x, y, z) => { const t = mk(new THREE.TorusGeometry(r, 0.1, 10, 24), navy, x, y, z, gCover); t.rotation.y = Math.PI / 2; };
+ring(0.38, 3.0, 18.5, -8); ring(0.55, 3.0, 18.5, 1.5);
+cy(0.5, 0.5, navy, 22.0, 15.9, 6.4, gCover, 'x');
+
+// ===== FONTE 5 V / 2 A micro USB (conceitual) =====
+const pw = new THREE.Group(); pw.position.set(29, 0, 6.5); gPower.add(pw);
+bx(5, 3.2, 6, std(0xf4f6f9, 0.35), 0, 1.6, 0, pw);
+[-0.8, 0.8].forEach(z => bx(0.6, 0.12, 0.5, sMat, 2.8, 1.6, z, pw));
+cy(0.3, 0.5, blk, -1.7, 3.45, 0, pw);
+const lc = document.createElement('canvas'); lc.width = 256; lc.height = 128; const lx = lc.getContext('2d');
+lx.fillStyle = '#0b2447'; lx.fillRect(0, 0, 256, 128); lx.fillStyle = '#fff'; lx.font = 'bold 44px sans-serif'; lx.textAlign = 'center'; lx.fillText('5 V  2 A', 128, 78);
+const lt = new THREE.CanvasTexture(lc); lt.colorSpace = THREE.SRGBColorSpace;
+mk(new THREE.PlaneGeometry(3.6, 1.8), new THREE.MeshBasicMaterial({ map: lt }), 0, 1.6, 3.01, pw);
+bx(0.25, 0.12, 0.25, std(0x2ecc71, 0.3, 0, { emissive: 0x1a8f4a }), 1.7, 2.9, 3.02, pw);
+
+// ===== CABOS (coordenadas de mundo) =====
+const CB = gCables;
+// eletrodo de pH -> BNC do módulo
+tube([[-15, 19.8, 0], [-15, 21.2, -0.5], [-10, 21.6, -3], [-5, 20.5, -7], [0, 19.2, -8], [3, 18.5, -8], [4.2, 16.8, -8], [5.6, 14.3, -8]], 0x15171c, 0.17, CB, 0.4);
+cy(0.3, 0.7, silver, 5.45, 14.3, -8, CB, 'x', 16);
+// sonda de turbidez (saída lateral) -> módulo: 3 fios
+[[0, 0xf2c500], [0.12, 0xd32f2f], [-0.12, 0x1e6fd9]].forEach(o => {
+  const d = o[0];
+  tube([[-9, 12.9, 1.6 + d], [-8.6, 13.1, 2.4 + d], [-6.5, 14.5, 2.0 + d], [-4.5, 16.3, 1.7 + d], [-2, 18.3, 1.5 + d], [3, 18.5, 1.5 + d], [5.5, 16.8, 0.5 + d], [10, 15.6, -3 + d], [13.6, 14.7, -6.5 + d], [14.9, 14.05, -8 + d]], o[1], 0.12, CB);
+});
+// jumpers (ligações NÃO definidas): cor neutra, fim em região livre do protoboard
+const jumper = (px, pz, tx, col, peak) => {
+  tube([[px, 14.65, pz], [px, peak, pz + 2.0], [tx, peak - 0.1, 0.2], [tx, 14.9, 2.8], [tx, 14.03, 3.11]], col, 0.07, CB, 0.5);
+  bx(0.26, 0.5, 0.26, blk, px, 14.4, pz, CB);   // conector fêmea
+};
+[1, 2, 3].forEach((k, i) => jumper(9.6 + (k - 2.5) * 0.254, -6.65, 15.2 + i * 0.25, 0x9aa4b2, 16.4));
+[0, 1, 2].forEach((k, i) => jumper(17 + (k - 1.5) * 0.254, -6.95, 16.7 + i * 0.25, 0xc9d0da, 15.9));
+// cabo micro-USB fixo da fonte -> ESP32
+bx(1.2, 0.35, 0.6, blk, 11.6, 15.06, 4, CB);
+tube([[12.2, 15.06, 4], [13.8, 16.4, 5], [18, 16.6, 6], [21.5, 16.0, 6.4], [22.0, 15.9, 6.4], [22.9, 15.6, 6.4], [24.4, 13, 6.5], [26, 7, 6.5], [27, 3.6, 6.5], [27.3, 3.3, 6.5]], 0x15171c, 0.2, CB, 0.4);
+
+// ===== RÓTULOS =====
+const labelObjs = [];
+function label(grp, text, concept, a, p) {
+  const t = text + (concept ? '  (conceitual)' : '');
+  const m = document.createElement('canvas').getContext('2d');
+  m.font = '600 28px sans-serif'; const tw = Math.ceil(m.measureText(t).width);
+  const c = document.createElement('canvas'); c.width = tw + 36; c.height = 56;
+  const x2 = c.getContext('2d'); x2.font = '600 28px sans-serif';
+  x2.fillStyle = 'rgba(11,36,71,0.94)'; x2.fillRect(2, 2, c.width - 4, 52);
+  x2.strokeStyle = concept ? '#8fb2ee' : '#1e6fd9'; x2.lineWidth = 3; if (concept) x2.setLineDash([8, 6]); x2.strokeRect(2, 2, c.width - 4, 52);
+  x2.fillStyle = '#fff'; x2.textBaseline = 'middle'; x2.fillText(t, 18, 29);
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
+  sp.scale.set(c.width / 38, c.height / 38, 1); sp.position.set(p[0], p[1], p[2]); sp.renderOrder = 999;
+  const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(a[0], a[1], a[2]), new THREE.Vector3(p[0], p[1], p[2])]), new THREE.LineBasicMaterial({ color: 0x1e6fd9, transparent: true, opacity: 0.85, depthTest: false }));
+  ln.renderOrder = 998;
+  const g = new THREE.Group(); g.add(ln); g.add(sp); grp.add(g); labelObjs.push(g);
+}
+label(gTank, 'Caixa organizadora 29 L (base/proteção)', false, [-22.5, 22, 14.7], [-35, 31, 20]);
+label(gTank, 'Apoio do recipiente', true, [-19.45, 1.6, 2.8], [-34, 3, 9]);
+label(gCont, 'Recipiente de teste ≈ 1,5 L', false, [-19, 6, 4], [-38, 15, 14]);
+label(gCont, 'Linha d\u2019água', false, [-18.8, 7.8, 4.8], [-38, 8, 22]);
+label(gSens, 'Sensor de pH PH-4502C (a confirmar)', false, [-15, 19.5, 0], [-28, 36, 4]);
+label(gSens, 'Sensor de turbidez ST100 (a confirmar)', false, [-9, 13.3, 0], [-6, 34, 8]);
+label(gSens, 'Suportes dos sensores', true, [-11, 16.2, -6], [-23, 28, -14]);
+label(gCover, 'Cobertura da eletrônica', true, [12.5, 22.2, -13], [25, 32, -19]);
+label(gCover, 'Passa-cabos', true, [3, 18.5, -8], [2, 29, -19]);
+label(gElec, 'Módulo de leitura de pH', false, [9, 2.5, -8], [4, 9, -21]);
+label(gElec, 'Módulo de turbidez', false, [17, 2.5, -8], [23, 10, -21]);
+label(gElec, 'ESP32 DevKit', false, [8, 3.3, 4], [4, 9, 24]);
+label(gElec, 'Protoboard MB-102 (830 pontos)', false, [19.5, 2.0, 5.5], [28, 3, 27]);
+label(gElec, 'Resistores 5K1 (2×) · ligação não definida', false, [13.95, 2.7, 4], [12, 8, 31]);
+label(gElec, 'Deck elevado da eletrônica · acima da linha d\u2019água', true, [21.5, 0.6, 12], [30, -3, 20]);
+label(gPower, 'Fonte 5 V / 2 A micro USB', true, [29, 3.2, 6.5], [38, 16, 2]);
+label(gCables, 'Cabos e jumpers · ligações não definidas', true, [12.7, 16.3, -1], [31, 25, -10]);
+label(gLid, 'Tampa · posição e aberturas', true, [23, 24.8, 0], [32, 31, 0]);
+
+scene.traverse(o => { if (o.isMesh && o.material && !o.material.transparent && o !== holes) { o.castShadow = true; o.receiveShadow = true; } });
+
+// =====================================================================
+//  CÂMERA, CONTROLES E INTERFACE
+// =====================================================================
+const TARGET0 = new THREE.Vector3(2, 11, 0);
+const POS0 = new THREE.Vector3(66, 56, 92);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.07;
+controls.minDistance = 18; controls.maxDistance = 340;
+controls.maxPolarAngle = Math.PI * 0.495; controls.autoRotateSpeed = 1.2;
+
+// em telas estreitas (celular) a câmera se afasta um pouco para o modelo caber
+const kFit = () => camera.aspect < 1.25 ? Math.min(2.4, 1.25 / camera.aspect) : 1;
+const around = (pos, tgt) => {
+  const t = new THREE.Vector3(...tgt);
+  return [t.clone().add(new THREE.Vector3(...pos).sub(t).multiplyScalar(kFit())), t];
+};
+
+function resize() {
+  const r = viewer.getBoundingClientRect();
+  const w = Math.max(200, Math.floor(r.width)), h = Math.max(200, Math.floor(r.height));
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+resize();
+new ResizeObserver(resize).observe(viewer);
+window.addEventListener('orientationchange', () => setTimeout(resize, 250));
+
+// posição inicial
+{ const [p, t] = around(POS0.toArray(), TARGET0.toArray()); camera.position.copy(p); controls.target.copy(t); controls.update(); }
+
+// animação suave da câmera
+let tw = null;
+function flyTo(pos, tgt) {
+  tw = { p0: camera.position.clone(), t0: controls.target.clone(), p1: pos.clone(), t1: tgt.clone(), s: performance.now(), dur: 850 };
+}
+controls.addEventListener('start', () => { tw = null; });
+
+// estado e botões
+const state = { cover: true, lid: false, explode: false, labels: true, rotate: false };
+const B = { cover: $('b-cover'), lid: $('b-lid'), exp: $('b-exp'), lab: $('b-lab'), rot: $('b-rot') };
+function sync() {
+  B.cover.textContent = 'Cobertura: ' + (state.cover ? 'visível' : 'oculta'); B.cover.setAttribute('aria-pressed', state.cover);
+  B.lid.textContent = 'Tampa: ' + (state.lid ? 'colocada' : 'removida'); B.lid.setAttribute('aria-pressed', state.lid);
+  B.exp.setAttribute('aria-pressed', state.explode);
+  B.lab.textContent = 'Rótulos: ' + (state.labels ? 'visíveis' : 'ocultos'); B.lab.setAttribute('aria-pressed', state.labels);
+  B.rot.setAttribute('aria-pressed', state.rotate);
+  labelObjs.forEach(l => l.visible = state.labels);
+  controls.autoRotate = state.rotate;
+}
+const toggle = k => { state[k] = !state[k]; sync(); };
+B.cover.onclick = () => toggle('cover');
+B.lid.onclick = () => toggle('lid');
+B.exp.onclick = () => toggle('explode');
+B.lab.onclick = () => toggle('labels');
+B.rot.onclick = () => toggle('rotate');
+$('b-top').onclick = () => { const [p, t] = around([2, 100, 22], [2, 8, 0]); flyTo(p, t); };
+$('b-front').onclick = () => { const [p, t] = around([2, 20, 115], [2, 11, 0]); flyTo(p, t); };
+const goHome = () => { const [p, t] = around(POS0.toArray(), TARGET0.toArray()); flyTo(p, t); };
+$('b-home').onclick = goHome;
+sync();
+
+// atalhos de teclado (computador)
+window.addEventListener('keydown', e => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = e.key.toLowerCase();
+  if (k === 'c') toggle('cover'); else if (k === 't') toggle('lid');
+  else if (k === 'e') toggle('explode'); else if (k === 'l') toggle('labels');
+  else if (k === 'r') goHome();
+});
+
+// identificação dos componentes (painel): aproxima a câmera do item
+const FOCUS = {
+  caixa:      { t: [0, 12, 0],        d: 115 },
+  recipiente: { t: [-12, 6, 0],       d: 42 },
+  ph:         { t: [-15, 12, 0],      d: 48 },
+  turbidez:   { t: [-9, 9, 0],        d: 40 },
+  modulos:    { t: [13, 14, -8],      d: 36, cover: false },
+  esp32:      { t: [8, 15, 4],        d: 30, cover: false },
+  protoboard: { t: [12.5, 14.2, 4],   d: 34, cover: false },
+  resistores: { t: [13, 14.4, 4],     d: 20, cover: false },
+  fonte:      { t: [29, 2, 6.5],      d: 32 },
+  suportes:   { t: [-11, 13, -5],     d: 58 },
+  cobertura:  { t: [12.5, 18, 0],     d: 60, cover: true },
+  cabos:      { t: [8, 16, -3],       d: 60 },
+  tampa:      { t: [0, 24.8, 0],      d: 110, lid: true }
+};
+const items = Array.from(document.querySelectorAll('.comp'));
+items.forEach(btn => btn.addEventListener('click', () => {
+  const f = FOCUS[btn.dataset.focus]; if (!f) return;
+  items.forEach(b => b.classList.toggle('active', b === btn));
+  state.explode = false;
+  if (f.cover !== undefined) state.cover = f.cover;
+  if (f.lid !== undefined) state.lid = f.lid;
+  sync();
+  const t = new THREE.Vector3(...f.t);
+  const dir = camera.position.clone().sub(controls.target).normalize();
+  if (dir.y < 0.15) dir.y = 0.15; dir.normalize();
+  flyTo(t.clone().add(dir.multiplyScalar(f.d * kFit())), t);
+  if (window.matchMedia('(max-width: 980px)').matches) viewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}));
+
+// =====================================================================
+//  LOOP
+// =====================================================================
+let eT = 0, first = true;
+function tick(now) {
+  requestAnimationFrame(tick);
+  eT += ((state.explode ? 1 : 0) - eT) * 0.08;
+  gCover.position.y = eT * 22; gLid.position.y = eT * 34; gSens.position.y = eT * 16; gCont.position.y = eT * 4; gPower.position.x = eT * 8;
+  gCover.visible = state.cover; gLid.visible = state.lid; gCables.visible = eT < 0.02;
+  if (tw) {
+    const u = Math.min(1, (now - tw.s) / tw.dur);
+    const e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+    camera.position.lerpVectors(tw.p0, tw.p1, e);
+    controls.target.lerpVectors(tw.t0, tw.t1, e);
+    if (u >= 1) tw = null;
+  }
+  controls.update();
+  renderer.render(scene, camera);
+  if (first) { first = false; window.__aguasOk = true; $('loading').hidden = true; }
+}
+requestAnimationFrame(tick);
+
+} catch (err) {
+  console.error(err);
+  if (window.__aguasShowError) window.__aguasShowError(String(err && err.message || err));
+}
+</script>
+</body>
+</html>
